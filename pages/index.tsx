@@ -6,7 +6,7 @@ export default function Home() {
     <div>
       <Head>
         <title>Twitter-Clone</title>
-        <link rel="icon" href="/Logo_of_Twitter.svg.png" />
+        <link rel="icon" href="/logo.png" />
       </Head>
 
       <div className='grid grid-cols-12 h-screen w-screen'>
