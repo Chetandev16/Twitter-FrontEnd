@@ -1,7 +1,12 @@
 import Head from 'next/head'
-import { BsTwitter,BsBell,BsEnvelope,BsBookmark } from 'react-icons/bs'
-import { BiHomeCircle,BiHash,BiUser } from 'react-icons/bi'
+import { useCallback } from "react"
+import { BsTwitter, BsBell, BsEnvelope, BsBookmark } from 'react-icons/bs'
+import { BiHomeCircle, BiHash, BiUser } from 'react-icons/bi'
+import { CredentialResponse, GoogleLogin } from "@react-oauth/google"
 import FeedCard from '@/components/FeedCard'
+import { toast } from 'react-hot-toast'
+import { graphqlClient } from '@/clients/api'
+import { verifyUserGoogleTokenQuery } from '@/graphql/query/user'
 
 interface TwitterSidebarButton {
   title: string,
@@ -15,27 +20,42 @@ const SidebarMenuItems: TwitterSidebarButton[] = [
   },
   {
     title: 'Explore',
-    icon: <BiHash/>
+    icon: <BiHash />
   },
   {
     title: 'Notifications',
-    icon: <BsBell/>
+    icon: <BsBell />
   },
   {
     title: 'Messages',
-    icon: <BsEnvelope/>
+    icon: <BsEnvelope />
   },
   {
     title: 'Bookmarks',
-    icon: <BsBookmark/>
+    icon: <BsBookmark />
   },
   {
     title: 'Profile',
-    icon: <BiUser/>
+    icon: <BiUser />
   }
 ]
 
 export default function Home() {
+
+
+  const handelLoginWithGoogle = useCallback(async (cred: CredentialResponse) => {
+    const googleToken = cred.credential
+    if (!googleToken) {
+      return toast.error('Error while login with google')
+    }
+
+    const { verifyGoogleToken } = await graphqlClient.request(verifyUserGoogleTokenQuery, { token: googleToken })
+    toast.success('Login success')
+    if (verifyGoogleToken) {
+      window.localStorage.setItem('__twitter_token', verifyGoogleToken)
+    }
+  }, [])
+
   return (
     <div className='overflow-x-hidden'>
       <Head>
@@ -44,7 +64,7 @@ export default function Home() {
       </Head>
 
       <div className='grid grid-cols-12 h-screen px-52 w-screen'>
-        <div className='col-span-3 flex flex-col justify-start pt-1'>
+        <div className='col-span-3 flex flex-col justify-start pt-1 ml-32'>
           <div className='text-2xl transition-all ease-linear hover:bg-gray-800 h-fit w-fit object-fit cursor-pointer p-4 rounded-full'>
             <BsTwitter />
           </div>
@@ -69,23 +89,26 @@ export default function Home() {
 
 
         {/* card */}
-        <div className='col-span-5 border-[1px] border-b-0 overflow-y-scroll no-scrollbar border-gray-700'>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
+        <div className='col-span-5 border-[1px] border-b-0 overflow-y-scroll no-scrollbar border-gray-700 '>
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
         </div>
 
-        <div className='col-span-3'>
-
+        <div className='col-span-3 p-5'>
+          <div className='p-5 bg-slate-700 rounded-lg'>
+            <h1 className='my-2 text-xl'>New To Twitter?</h1>
+            <GoogleLogin onSuccess={handelLoginWithGoogle} />
+          </div>
         </div>
       </div>
     </div>
