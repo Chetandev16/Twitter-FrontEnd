@@ -7,6 +7,9 @@ import FeedCard from '@/components/FeedCard'
 import { toast } from 'react-hot-toast'
 import { graphqlClient } from '@/clients/api'
 import { verifyUserGoogleTokenQuery } from '@/graphql/query/user'
+import { useCurrentUser } from '@/hooks/user'
+import { useQueryClient } from '@tanstack/react-query'
+import Image from 'next/image'
 
 interface TwitterSidebarButton {
   title: string,
@@ -42,9 +45,24 @@ const SidebarMenuItems: TwitterSidebarButton[] = [
 
 export default function Home() {
 
+  const {
+    user
+  } = useCurrentUser()
+
+  const queryClient = useQueryClient()
+
+  console.log(user)
+  
+  const handelLogout = useCallback(async () => {
+    window.localStorage.removeItem('__twitter_token')
+    await queryClient.invalidateQueries(['current-User'])
+
+    window.location.reload()
+  }, [queryClient])
 
   const handelLoginWithGoogle = useCallback(async (cred: CredentialResponse) => {
     const googleToken = cred.credential
+    console.log(googleToken)
     if (!googleToken) {
       return toast.error('Error while login with google')
     }
@@ -53,8 +71,10 @@ export default function Home() {
     toast.success('Login success')
     if (verifyGoogleToken) {
       window.localStorage.setItem('__twitter_token', verifyGoogleToken)
+      await queryClient.invalidateQueries(['current-User'])
+      window.location.reload()
     }
-  }, [])
+  }, [queryClient])
 
   return (
     <div className='overflow-x-hidden'>
@@ -64,7 +84,7 @@ export default function Home() {
       </Head>
 
       <div className='grid grid-cols-12 h-screen px-52 w-screen'>
-        <div className='col-span-3 flex flex-col justify-start pt-1 ml-32'>
+        <div className='col-span-3 flex flex-col justify-start pt-1 ml-32 relative'>
           <div className='text-2xl transition-all ease-linear hover:bg-gray-800 h-fit w-fit object-fit cursor-pointer p-4 rounded-full'>
             <BsTwitter />
           </div>
@@ -85,6 +105,15 @@ export default function Home() {
           </div>
 
           <button className='bg-[#1d9bf0] w-[70%] transition-colors ease-linear hover:bg-[#1A8CD8] rounded-full py-2 px-2 mt-6 text-xl font-semibold mr-10'>Tweet</button>
+
+
+
+          {user && <div onClick={()=>handelLogout()} className='absolute bottom-5 left-0 flex gap-2 items-center transition-colors ease-linear cursor-pointer hover:bg-slate-800 px-3 py-2 rounded-full'>
+            {user.profileImageURL && <Image src={user?.profileImageURL} width={50} height={50} className='rounded-full' alt="" />}
+            <div>
+              <h3>{user.firstName} {user.lastName}</h3>
+            </div>
+          </div>}
         </div>
 
 
@@ -105,10 +134,14 @@ export default function Home() {
         </div>
 
         <div className='col-span-3 p-5'>
-          <div className='p-5 bg-slate-700 rounded-lg'>
-            <h1 className='my-2 text-xl'>New To Twitter?</h1>
-            <GoogleLogin onSuccess={handelLoginWithGoogle} />
-          </div>
+          {
+            !user ? (
+              <div className='p-5 bg-slate-700 rounded-lg'>
+                <h1 className='my-2 text-xl'>New To Twitter?</h1>
+                <GoogleLogin onSuccess={handelLoginWithGoogle} />
+              </div>
+            ) : ""
+          }
         </div>
       </div>
     </div>
